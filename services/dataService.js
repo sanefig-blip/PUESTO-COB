@@ -30,6 +30,7 @@ const DATA_KEYS = {
     roster: 'rosterData',
     templates: 'serviceTemplates',
     users: 'usersData',
+    changeLog: 'changeLogData',
 };
 
 const DEFAULTS = {
@@ -48,6 +49,7 @@ const DEFAULTS = {
     [DATA_KEYS.roster]: preloadedRosterData,
     [DATA_KEYS.templates]: defaultServiceTemplates,
     [DATA_KEYS.users]: defaultUsers,
+    [DATA_KEYS.changeLog]: [],
 };
 
 // --- Real-Time Synchronization via MQTT ---
@@ -165,6 +167,19 @@ export const dataService = {
     saveRoster: (data) => saveData(DATA_KEYS.roster, data),
     saveTemplates: (data) => saveData(DATA_KEYS.templates, data),
     saveUsers: (data) => saveData(DATA_KEYS.users, data),
+    saveChangeLog: (data) => saveData(DATA_KEYS.changeLog, data),
+
+    addLogEntry: (entry) => {
+        const currentLog = loadData(DATA_KEYS.changeLog, []);
+        const newEntry = {
+            id: `log-${Date.now()}-${Math.random()}`,
+            timestamp: new Date().toISOString(),
+            ...entry
+        };
+        // Keep the log from getting too big, cap at 200 entries
+        const updatedLog = [newEntry, ...currentLog].slice(0, 200);
+        saveData(DATA_KEYS.changeLog, updatedLog);
+    },
 
     subscribe: (callback) => {
         window.addEventListener('datachanged', callback);

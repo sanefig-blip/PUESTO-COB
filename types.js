@@ -76,3 +76,6 @@ export const HidroAlertData = {};
 
 // New types for Regimen de Intervencion
 export const RegimenMap = {};
+
+// New type for Change Log
+export const LogEntry = {};

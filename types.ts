@@ -377,3 +377,12 @@ export interface InterventionGroup {
     lat?: number;
     lng?: number;
 }
+
+// New type for Change Log
+export interface LogEntry {
+  id: string;
+  timestamp: string;
+  user: string;
+  action: string;
+  details: string;
+}
