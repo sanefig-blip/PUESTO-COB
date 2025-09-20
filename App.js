@@ -60,6 +60,7 @@ const App = () => {
     const [usersData, setUsersData] = useState([]);
     const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
     const [isFullScreen, setIsFullScreen] = useState(false);
+    const [mqttStatus, setMqttStatus] = useState('Conectando...');
 
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
@@ -225,6 +226,30 @@ const App = () => {
         dataService.subscribe(handleDataChange);
         return () => dataService.unsubscribe(handleDataChange);
     }, []);
+
+    useEffect(() => {
+        const handleMqttStatus = (event) => {
+            setMqttStatus(event.detail.status);
+        };
+        window.addEventListener('mqttstatus', handleMqttStatus);
+        return () => {
+            window.removeEventListener('mqttstatus', handleMqttStatus);
+        };
+    }, []);
+
+    const getMqttStatusColor = () => {
+        switch (mqttStatus) {
+            case 'Conectado':
+                return 'bg-green-600/80';
+            case 'Desconectado':
+            case 'Sin conexión':
+                return 'bg-red-600/80';
+            case 'Conectando...':
+            case 'Reconectando...':
+            default:
+                return 'bg-yellow-500/80 text-black';
+        }
+    };
 
     const sortPersonnel = (a, b) => {
         const rankComparison = (rankOrder[a.rank] || 99) - (rankOrder[b.rank] || 99);
@@ -736,8 +761,8 @@ const App = () => {
             )
         ),
         React.createElement("main", { className: "container mx-auto p-4 sm:p-6 lg:p-8" }, renderContent()),
-        React.createElement("div", { className: "fixed bottom-4 right-4 bg-green-800/80 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full shadow-lg z-50" },
-            React.createElement("span", { className: "font-bold" }, "Sincronización en tiempo real activa"), " (canal público de demostración)"
+        React.createElement("div", { className: `fixed bottom-4 right-4 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full shadow-lg z-50 ${getMqttStatusColor()}` },
+            React.createElement("span", { className: "font-bold" }, "Sincronización:"), ` ${mqttStatus}`
         ),
         isHelpModalOpen && React.createElement(HelpModal, { isOpen: isHelpModalOpen, onClose: () => setIsHelpModalOpen(false), unitList, commandPersonnel, servicePersonnel }),
         isTemplateModalOpen && React.createElement(ServiceTemplateModal, { isOpen: isTemplateModalOpen, onClose: () => setIsTemplateModalOpen(false), templates: serviceTemplates, onSelectTemplate: (template) => handleSelectTemplate(template, templateModalProps), onDeleteTemplate: handleDeleteTemplate }),

@@ -69,14 +69,19 @@ const DEFAULTS = {
 };
 
 // --- Real-Time Synchronization via MQTT ---
-const MQTT_BROKER_URL = 'wss://broker.hivemq.com:8884/mqtt';
+const MQTT_BROKER_URL = 'wss://broker.emqx.io:8084/mqtt';
 const MQTT_TOPIC = 'bomberos-ciudad-sync/data-v2-a4b1';
 const clientId = `bomberos-client-${Math.random().toString(16).substr(2, 8)}`;
 let mqttClient: mqtt.MqttClient | null = null;
 
+const dispatchMqttStatus = (status: string) => {
+    window.dispatchEvent(new CustomEvent('mqttstatus', { detail: { status } }));
+};
+
 const connectMqtt = () => {
     try {
         console.log(`Connecting to MQTT broker at ${MQTT_BROKER_URL} with client ID: ${clientId}`);
+        dispatchMqttStatus('Conectando...');
         mqttClient = mqtt.connect(MQTT_BROKER_URL, {
             clientId,
             reconnectPeriod: 2000,
@@ -85,6 +90,7 @@ const connectMqtt = () => {
 
         mqttClient.on('connect', () => {
             console.log('Successfully connected to MQTT Broker for real-time sync.');
+            dispatchMqttStatus('Conectado');
             mqttClient?.subscribe(MQTT_TOPIC, { qos: 1 }, (err) => {
                 if (err) {
                     console.error('MQTT subscription failed:', err);
@@ -110,9 +116,18 @@ const connectMqtt = () => {
         });
 
         mqttClient.on('error', (err) => console.error('MQTT Client Error:', err));
-        mqttClient.on('reconnect', () => console.log('MQTT client is attempting to reconnect...'));
-        mqttClient.on('close', () => console.log('MQTT connection closed.'));
-        mqttClient.on('offline', () => console.log('MQTT client went offline.'));
+        mqttClient.on('reconnect', () => {
+            console.log('MQTT client is attempting to reconnect...');
+            dispatchMqttStatus('Reconectando...');
+        });
+        mqttClient.on('close', () => {
+            console.log('MQTT connection closed.');
+            dispatchMqttStatus('Desconectado');
+        });
+        mqttClient.on('offline', () => {
+            console.log('MQTT client went offline.');
+            dispatchMqttStatus('Sin conexión');
+        });
 
     } catch (e) {
         console.error('Failed to initialize MQTT client connection:', e);

@@ -60,6 +60,7 @@ const App = () => {
     const [usersData, setUsersData] = useState<User[]>([]);
     const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
     const [isFullScreen, setIsFullScreen] = useState(false);
+    const [mqttStatus, setMqttStatus] = useState('Conectando...');
 
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
@@ -226,6 +227,31 @@ const App = () => {
         return () => dataService.unsubscribe(handleDataChange);
     }, []);
 
+    useEffect(() => {
+        const handleMqttStatus = (event: CustomEvent) => {
+            setMqttStatus(event.detail.status);
+        };
+        window.addEventListener('mqttstatus', handleMqttStatus as EventListener);
+        return () => {
+            window.removeEventListener('mqttstatus', handleMqttStatus as EventListener);
+        };
+    }, []);
+
+    const getMqttStatusColor = () => {
+        switch (mqttStatus) {
+            case 'Conectado':
+                return 'bg-green-600/80';
+            case 'Desconectado':
+            case 'Sin conexión':
+                return 'bg-red-600/80';
+            case 'Conectando...':
+            case 'Reconectando...':
+            default:
+                return 'bg-yellow-500/80 text-black';
+        }
+    };
+
+
     const sortPersonnel = (a: Personnel, b: Personnel) => {
         const rankComparison = (rankOrder[a.rank] || 99) - (rankOrder[b.rank] || 99);
         return rankComparison !== 0 ? rankComparison : a.name.localeCompare(b.name);
@@ -386,7 +412,7 @@ const App = () => {
         const newDate = new Date(year, month, day);
 
         if (schedule) {
-            const monthNames = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
+            const monthNames = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
             const newDateString = `${newDate.getDate()} DE ${monthNames[newDate.getMonth()]} DE ${newDate.getFullYear()}`;
             const newCommandStaff = loadGuardLineFromRoster(newDate, schedule.commandStaff, commandPersonnel, roster);
             dataService.saveSchedule({ ...schedule, date: newDateString, commandStaff: newCommandStaff });
@@ -745,8 +771,8 @@ const App = () => {
             <main className="container mx-auto p-4 sm:p-6 lg:p-8">
                 {renderContent()}
             </main>
-            <div className="fixed bottom-4 right-4 bg-green-800/80 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full shadow-lg z-50">
-                <span className="font-bold">Sincronización en tiempo real activa</span> (canal público de demostración)
+            <div className={`fixed bottom-4 right-4 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full shadow-lg z-50 ${getMqttStatusColor()}`}>
+                <span className="font-bold">Sincronización:</span> {mqttStatus}
             </div>
             {isHelpModalOpen && <HelpModal isOpen={isHelpModalOpen} onClose={() => setIsHelpModalOpen(false)} unitList={unitList} commandPersonnel={commandPersonnel} servicePersonnel={servicePersonnel} />}
             {isTemplateModalOpen && <ServiceTemplateModal isOpen={isTemplateModalOpen} onClose={() => setIsTemplateModalOpen(false)} templates={serviceTemplates} onSelectTemplate={(template) => handleSelectTemplate(template, templateModalProps)} onDeleteTemplate={handleDeleteTemplate} />}
