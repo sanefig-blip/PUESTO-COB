@@ -70,24 +70,26 @@ const DEFAULTS = {
 
 // --- Real-Time Synchronization via MQTT ---
 const MQTT_BROKER_URL = 'wss://broker.hivemq.com:8884/mqtt';
-// NOTE: This is a public, unauthenticated channel for demonstration purposes.
-// For a production environment, use a private broker with authentication.
-const MQTT_TOPIC = 'bomberos-ciudad-sync/data-3a9f';
+const MQTT_TOPIC = 'bomberos-ciudad-sync/data-v2-a4b1';
 const clientId = `bomberos-client-${Math.random().toString(16).substr(2, 8)}`;
 let mqttClient: mqtt.MqttClient | null = null;
 
 const connectMqtt = () => {
     try {
-        console.log(`Connecting to MQTT broker at ${MQTT_BROKER_URL}`);
-        mqttClient = mqtt.connect(MQTT_BROKER_URL);
+        console.log(`Connecting to MQTT broker at ${MQTT_BROKER_URL} with client ID: ${clientId}`);
+        mqttClient = mqtt.connect(MQTT_BROKER_URL, {
+            clientId,
+            reconnectPeriod: 2000,
+            connectTimeout: 5000,
+        });
 
         mqttClient.on('connect', () => {
-            console.log('Connected to MQTT Broker for real-time sync.');
-            mqttClient?.subscribe(MQTT_TOPIC, (err) => {
+            console.log('Successfully connected to MQTT Broker for real-time sync.');
+            mqttClient?.subscribe(MQTT_TOPIC, { qos: 1 }, (err) => {
                 if (err) {
-                    console.error('MQTT subscription error:', err);
+                    console.error('MQTT subscription failed:', err);
                 } else {
-                    console.log(`Subscribed to topic: ${MQTT_TOPIC}`);
+                    console.log(`Successfully subscribed to topic: ${MQTT_TOPIC}`);
                 }
             });
         });
@@ -96,38 +98,27 @@ const connectMqtt = () => {
             if (topic === MQTT_TOPIC) {
                 try {
                     const { key, data, senderId } = JSON.parse(message.toString());
-                    
-                    if (senderId === clientId) {
-                        return; // Ignore messages from self
-                    }
+                    if (senderId === clientId) return;
 
-                    console.log(`Received remote update for ${key} from ${senderId}`);
-                    
-                    // Save remote data to local storage
+                    console.log(`Received remote update for key: "${key}" from sender: ${senderId}`);
                     localStorage.setItem(key, JSON.stringify(data));
-                    
-                    // Notify local components of the remote update
                     window.dispatchEvent(new CustomEvent('datachanged', { detail: { key, data } }));
-
                 } catch (e) {
                     console.error('Error parsing MQTT message:', e);
                 }
             }
         });
 
-        mqttClient.on('error', (err) => {
-            console.error('MQTT Connection Error:', err);
-        });
-        
-        mqttClient.on('close', () => {
-            console.log('MQTT connection closed.');
-        });
+        mqttClient.on('error', (err) => console.error('MQTT Client Error:', err));
+        mqttClient.on('reconnect', () => console.log('MQTT client is attempting to reconnect...'));
+        mqttClient.on('close', () => console.log('MQTT connection closed.'));
+        mqttClient.on('offline', () => console.log('MQTT client went offline.'));
+
     } catch (e) {
-        console.error('Failed to initialize MQTT client:', e);
+        console.error('Failed to initialize MQTT client connection:', e);
     }
 };
 
-// Initiate connection on module load
 connectMqtt();
 // --- End of Real-Time Sync Logic ---
 
@@ -142,20 +133,20 @@ const loadData = <T,>(key: string, defaultValue: T): T => {
 };
 
 const saveData = (key: string, data: any) => {
-    // 1. Save to local storage
     localStorage.setItem(key, JSON.stringify(data));
-    
-    // 2. Notify local components (other tabs)
     window.dispatchEvent(new CustomEvent('datachanged', { detail: { key, data } }));
     
-    // 3. Broadcast to remote clients
     if (mqttClient && mqttClient.connected) {
         const payload = JSON.stringify({ key, data, senderId: clientId });
         mqttClient.publish(MQTT_TOPIC, payload, { qos: 1 }, (err) => {
             if (err) {
-                console.error('MQTT publish error:', err);
+                console.error(`MQTT publish error for key "${key}":`, err);
+            } else {
+                console.log(`Successfully published update for key: "${key}"`);
             }
         });
+    } else {
+        console.warn(`MQTT client not connected. Update for "${key}" was not sent in real-time.`);
     }
 };
 
@@ -184,18 +175,6 @@ export const dataService = {
     saveTemplates: (data: ServiceTemplate[]) => saveData(DATA_KEYS.templates, data),
     saveUsers: (data: User[]) => saveData(DATA_KEYS.users, data),
     saveChangeLog: (data: LogEntry[]) => saveData(DATA_KEYS.changeLog, data),
-
-    addLogEntry: (entry: { user: string; action: string; details: string; }) => {
-        const currentLog = loadData<LogEntry[]>(DATA_KEYS.changeLog, []);
-        const newEntry: LogEntry = {
-            id: `log-${Date.now()}-${Math.random()}`,
-            timestamp: new Date().toISOString(),
-            ...entry
-        };
-        // Keep the log from getting too big, cap at 200 entries
-        const updatedLog = [newEntry, ...currentLog].slice(0, 200);
-        saveData(DATA_KEYS.changeLog, updatedLog);
-    },
 
     subscribe: (callback: (event: CustomEvent) => void) => {
         window.addEventListener('datachanged', callback as EventListener);
