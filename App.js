@@ -17,7 +17,7 @@ import HidroAlertView from './components/HidroAlertView.js';
 import RegimenDeIntervencion from './components/RegimenDeIntervencion.js';
 import ForestalView from './components/ForestalView.js';
 import Login from './components/Login.js';
-import { BookOpenIcon, DownloadIcon, ClockIcon, ClipboardListIcon, RefreshIcon, EyeIcon, EyeOffIcon, UploadIcon, QuestionMarkCircleIcon, BookmarkIcon, ChevronDownIcon, FireIcon, FilterIcon, AnnotationIcon, LightningBoltIcon, MapIcon, CubeIcon, ClipboardCheckIcon, LogoutIcon, ShieldExclamationIcon, SunIcon, MaximizeIcon, MinimizeIcon, DocumentTextIcon } from './components/icons.js';
+import { BookOpenIcon, DownloadIcon, ClockIcon, ClipboardListIcon, RefreshIcon, EyeIcon, EyeOffIcon, UploadIcon, QuestionMarkCircleIcon, BookmarkIcon, ChevronDownIcon, FireIcon, FilterIcon, AnnotationIcon, LightningBoltIcon, MapIcon, CubeIcon, ClipboardCheckIcon, LogoutIcon, ShieldExclamationIcon, SunIcon, MaximizeIcon, MinimizeIcon, DocumentTextIcon, ArchiveBoxIcon, CloudArrowDownIcon } from './components/icons.js';
 import HelpModal from './components/HelpModal.js';
 import ServiceTemplateModal from './components/ServiceTemplateModal.js';
 import ExportTemplateModal from './components/ExportTemplateModal.js';
@@ -47,6 +47,7 @@ const App = () => {
     const [hidroAlertData, setHidroAlertData] = useState(null);
     const [regimen, setRegimen] = useState(null);
     const [interventionGroups, setInterventionGroups] = useState([]);
+    const [changeLog, setChangeLog] = useState([]);
     const [view, setView] = useState('unit-report');
     const [displayDate, setDisplayDate] = useState(null);
     const [commandPersonnel, setCommandPersonnel] = useState([]);
@@ -83,12 +84,60 @@ const App = () => {
     const startX = useRef(0);
     const scrollLeft = useRef(0);
 
+    const [showUpdateNotification, setShowUpdateNotification] = useState(false);
+    const [waitingWorker, setWaitingWorker] = useState(null);
+
+    const onUpdate = () => {
+        waitingWorker?.postMessage({ type: 'SKIP_WAITING' });
+        setShowUpdateNotification(false);
+        window.location.reload();
+    };
+
+    useEffect(() => {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').then(registration => {
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    if (newWorker) {
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                setWaitingWorker(newWorker);
+                                setShowUpdateNotification(true);
+                            }
+                        });
+                    }
+                });
+            }).catch(error => {
+                console.error('Service Worker registration failed:', error);
+            });
+        }
+    }, []);
+
     const handleLogin = (user) => {
         setCurrentUser(user);
     };
 
     const handleLogout = () => {
         setCurrentUser(null);
+    };
+    
+    const addLogEntry = (action, details) => {
+        const newEntry = {
+            id: `log-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            user: currentUser?.username || 'Sistema',
+            action,
+            details,
+        };
+        const updatedLog = [newEntry, ...changeLog];
+        dataService.saveChangeLog(updatedLog);
+    };
+
+    const handleClearLog = () => {
+        if (window.confirm("¿Está seguro de que desea borrar todo el registro de cambios? Esta acción no se puede deshacer.")) {
+            addLogEntry('Limpieza de Registro', `El usuario ${currentUser?.username} ha limpiado el registro de cambios.`);
+            dataService.saveChangeLog([]);
+        }
     };
 
 
@@ -184,6 +233,7 @@ const App = () => {
         setHidroAlertData(loadedData.hidroAlert);
         setRegimen(loadedData.regimen);
         setInterventionGroups(loadedData.interventionGroups);
+        setChangeLog(loadedData.changeLog.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
         setCommandPersonnel(loadedData.commandPersonnel);
         setServicePersonnel(loadedData.servicePersonnel);
         setUsersData(loadedData.users);
@@ -216,6 +266,7 @@ const App = () => {
                 'rosterData': setRoster,
                 'serviceTemplates': setServiceTemplates,
                 'usersData': setUsersData,
+                'changeLogData': (logData) => setChangeLog(logData.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())),
             };
             
             if (keyMap[key]) {
@@ -673,6 +724,7 @@ const App = () => {
             case 'time-grouped': return React.createElement(TimeGroupedScheduleDisplay, { assignmentsByTime: getAssignmentsByTime, onAssignmentStatusChange: handleAssignmentStatusChange });
             case 'nomenclador': if (currentUser.role !== 'admin') return React.createElement("div", { className: "text-center text-red-400 text-lg" }, "Acceso denegado. Se requieren permisos de administrador."); return React.createElement(Nomenclador, { commandPersonnel, servicePersonnel, units: unitList, unitTypes, roster, users: usersData, onAddCommandPersonnel: (item) => updateAndSaveCommandPersonnel([...commandPersonnel, item]), onUpdateCommandPersonnel: (item) => updateAndSaveCommandPersonnel(commandPersonnel.map(p => p.id === item.id ? item : p)), onRemoveCommandPersonnel: (item) => updateAndSaveCommandPersonnel(commandPersonnel.filter(p => p.id !== item.id)), onAddServicePersonnel: (item) => updateAndSaveServicePersonnel([...servicePersonnel, item]), onUpdateServicePersonnel: (item) => updateAndSaveServicePersonnel(servicePersonnel.map(p => p.id === item.id ? item : p)), onRemoveServicePersonnel: (item) => updateAndSaveServicePersonnel(servicePersonnel.filter(p => p.id !== item.id)), onUpdateUnits: updateAndSaveUnits, onUpdateUnitTypes: updateAndSaveUnitTypes, onUpdateRoster: updateAndSaveRoster, onUpdateUsers: updateAndSaveUsers });
             case 'regimen': return React.createElement(RegimenDeIntervencion, { regimenData: regimen, onUpdateRegimenData: handleUpdateRegimenData, currentUser });
+            case 'changelog': if (currentUser.role !== 'admin') return React.createElement("div", { className: "text-center text-red-400 text-lg" }, "Acceso denegado."); return React.createElement(ChangeLogView, { logEntries: changeLog, onClearLog: handleClearLog });
             default: return null;
         }
     };
@@ -753,7 +805,8 @@ const App = () => {
                         React.createElement("button", { className: getButtonClass('schedule'), onClick: () => setView('schedule') }, React.createElement(ClipboardListIcon, { className: "w-5 h-5" }), " Planificador"),
                         currentUser.role === 'admin' && React.createElement("button", { className: getButtonClass('time-grouped'), onClick: () => setView('time-grouped') }, React.createElement(ClockIcon, { className: "w-5 h-5" }), " Vista por Hora"),
                         (currentUser.role === 'admin' || currentUser.username === 'Puesto Comando') && React.createElement("button", { className: getButtonClass('regimen'), onClick: () => setView('regimen') }, React.createElement(DocumentTextIcon, { className: "w-5 h-5" }), " Régimen de Intervención"),
-                        currentUser.role === 'admin' && React.createElement("button", { className: getButtonClass('nomenclador'), onClick: () => setView('nomenclador') }, React.createElement(BookOpenIcon, { className: "w-5 h-5" }), " Nomencladores")
+                        currentUser.role === 'admin' && React.createElement("button", { className: getButtonClass('nomenclador'), onClick: () => setView('nomenclador') }, React.createElement(BookOpenIcon, { className: "w-5 h-5" }), " Nomencladores"),
+                        currentUser.role === 'admin' && React.createElement("button", { className: getButtonClass('changelog'), onClick: () => setView('changelog') }, React.createElement(ArchiveBoxIcon, { className: "w-5 h-5" }), " Registro de Cambios")
                     ),
                     React.createElement("div", { className: 'absolute top-0 left-0 bottom-0 w-8 bg-gradient-to-r from-zinc-800 to-transparent pointer-events-none transition-opacity duration-300 ' + (showScrollIndicators.left ? 'opacity-100' : 'opacity-0'), "aria-hidden": "true" }),
                     React.createElement("div", { className: 'absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-l from-zinc-800 to-transparent pointer-events-none transition-opacity duration-300 ' + (showScrollIndicators.right ? 'opacity-100' : 'opacity-0'), "aria-hidden": "true" })
@@ -763,6 +816,13 @@ const App = () => {
         React.createElement("main", { className: "container mx-auto p-4 sm:p-6 lg:p-8" }, renderContent()),
         React.createElement("div", { className: `fixed bottom-4 right-4 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full shadow-lg z-50 ${getMqttStatusColor()}` },
             React.createElement("span", { className: "font-bold" }, "Sincronización:"), ` ${mqttStatus}`
+        ),
+        showUpdateNotification && React.createElement("div", { className: "fixed top-20 right-4 bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in flex items-center gap-4" },
+            React.createElement("span", null, "Hay una nueva versión disponible."),
+            React.createElement("button", { onClick: onUpdate, className: "flex items-center gap-2 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-md font-semibold" },
+                React.createElement(CloudArrowDownIcon, { className: "w-5 h-5" }),
+                "Actualizar"
+            )
         ),
         isHelpModalOpen && React.createElement(HelpModal, { isOpen: isHelpModalOpen, onClose: () => setIsHelpModalOpen(false), unitList, commandPersonnel, servicePersonnel }),
         isTemplateModalOpen && React.createElement(ServiceTemplateModal, { isOpen: isTemplateModalOpen, onClose: () => setIsTemplateModalOpen(false), templates: serviceTemplates, onSelectTemplate: (template) => handleSelectTemplate(template, templateModalProps), onDeleteTemplate: handleDeleteTemplate }),
