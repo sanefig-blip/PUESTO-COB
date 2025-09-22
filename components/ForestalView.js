@@ -91,8 +91,6 @@ const ForestalView = ({ interventionGroups, onUpdateInterventionGroups }) => {
             React.createElement("main", { className: "lg:col-span-3 h-full" },
                 React.createElement(Croquis, { 
                     isActive: true, 
-                    onSketchCapture: () => {}, 
-                    onUnlockSketch: () => {}, 
                     storageKey: "forestalSketch",
                     interventionGroups: interventionGroups,
                     onUpdateInterventionGroups: onUpdateInterventionGroups
