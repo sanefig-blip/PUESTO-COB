@@ -95,23 +95,32 @@ const App: React.FC = () => {
     };
 
     useEffect(() => {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').then(registration => {
-                registration.addEventListener('updatefound', () => {
-                    const newWorker = registration.installing;
-                    if (newWorker) {
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                setWaitingWorker(newWorker);
-                                setShowUpdateNotification(true);
-                            }
-                        });
-                    }
+        const registerServiceWorker = () => {
+            if ('serviceWorker' in navigator) {
+                const swUrl = new URL('sw.js', window.location.origin).href;
+                navigator.serviceWorker.register(swUrl).then(registration => {
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        if (newWorker) {
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    setWaitingWorker(newWorker);
+                                    setShowUpdateNotification(true);
+                                }
+                            });
+                        }
+                    });
+                }).catch(error => {
+                    console.error('Service Worker registration failed:', error);
                 });
-            }).catch(error => {
-                console.error('Service Worker registration failed:', error);
-            });
-        }
+            }
+        };
+    
+        window.addEventListener('load', registerServiceWorker);
+    
+        return () => {
+            window.removeEventListener('load', registerServiceWorker);
+        };
     }, []);
 
     const handleLogin = (user: User) => {
@@ -805,7 +814,6 @@ const App: React.FC = () => {
                     <nav className="relative overflow-hidden">
                         <div ref={navScrollRef} className="flex items-center gap-1 overflow-x-auto whitespace-nowrap scrollbar-hide cursor-grab" onMouseDown={handleMouseDown} onMouseLeave={handleMouseLeave} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove}>
                             <button className={getButtonClass('unit-report')} onClick={() => setView('unit-report')}><FireIcon className="w-5 h-5" /> Reporte de Unidades</button>
-                            <button className={getButtonClass('hidro-alert')} onClick={() => setView('hidro-alert')}><ShieldExclamationIcon className="w-5 h-5" /> Alerta Hidro</button>
                             <button className={getButtonClass('unit-status')} onClick={() => setView('unit-status')}><FilterIcon className="w-5 h-5" /> Estado de Unidades</button>
                             <button className={getButtonClass('material-status')} onClick={() => setView('material-status')}><ClipboardCheckIcon className="w-5 h-5" /> Estado de Materiales</button>
                             {(currentUser.role === 'admin' || currentUser.username === 'Puesto Comando') && <button className={getButtonClass('command-post')} onClick={() => setView('command-post')}><AnnotationIcon className="w-5 h-5" /> Puesto Comando</button>}
@@ -816,6 +824,7 @@ const App: React.FC = () => {
                             <button className={getButtonClass('schedule')} onClick={() => setView('schedule')}><ClipboardListIcon className="w-5 h-5" /> Planificador</button>
                             {currentUser.role === 'admin' && <button className={getButtonClass('time-grouped')} onClick={() => setView('time-grouped')}><ClockIcon className="w-5 h-5" /> Vista por Hora</button>}
                             {(currentUser.role === 'admin' || currentUser.username === 'Puesto Comando') && <button className={getButtonClass('regimen')} onClick={() => setView('regimen')}><DocumentTextIcon className="w-5 h-5" /> Régimen de Intervención</button>}
+                            <button className={getButtonClass('hidro-alert')} onClick={() => setView('hidro-alert')}><ShieldExclamationIcon className="w-5 h-5" /> Alerta Hidro</button>
                             {currentUser.role === 'admin' && <button className={getButtonClass('nomenclador')} onClick={() => setView('nomenclador')}><BookOpenIcon className="w-5 h-5" /> Nomencladores</button>}
                             {currentUser.role === 'admin' && <button className={getButtonClass('changelog')} onClick={() => setView('changelog')}><ArchiveBoxIcon className="w-5 h-5" /> Registro de Cambios</button>}
                         </div>

@@ -94,23 +94,32 @@ const App = () => {
     };
 
     useEffect(() => {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').then(registration => {
-                registration.addEventListener('updatefound', () => {
-                    const newWorker = registration.installing;
-                    if (newWorker) {
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                setWaitingWorker(newWorker);
-                                setShowUpdateNotification(true);
-                            }
-                        });
-                    }
+        const registerServiceWorker = () => {
+            if ('serviceWorker' in navigator) {
+                const swUrl = new URL('sw.js', window.location.origin).href;
+                navigator.serviceWorker.register(swUrl).then(registration => {
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        if (newWorker) {
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    setWaitingWorker(newWorker);
+                                    setShowUpdateNotification(true);
+                                }
+                            });
+                        }
+                    });
+                }).catch(error => {
+                    console.error('Service Worker registration failed:', error);
                 });
-            }).catch(error => {
-                console.error('Service Worker registration failed:', error);
-            });
-        }
+            }
+        };
+
+        window.addEventListener('load', registerServiceWorker);
+
+        return () => {
+            window.removeEventListener('load', registerServiceWorker);
+        };
     }, []);
 
     const handleLogin = (user) => {
@@ -794,7 +803,6 @@ const App = () => {
                 React.createElement("nav", { className: "relative overflow-hidden" },
                     React.createElement("div", { ref: navScrollRef, className: "flex items-center gap-1 overflow-x-auto whitespace-nowrap scrollbar-hide cursor-grab", onMouseDown: handleMouseDown, onMouseLeave: handleMouseLeave, onMouseUp: handleMouseUp, onMouseMove: handleMouseMove },
                         React.createElement("button", { className: getButtonClass('unit-report'), onClick: () => setView('unit-report') }, React.createElement(FireIcon, { className: "w-5 h-5" }), " Reporte de Unidades"),
-                        React.createElement("button", { className: getButtonClass('hidro-alert'), onClick: () => setView('hidro-alert') }, React.createElement(ShieldExclamationIcon, { className: "w-5 h-5" }), " Alerta Hidro"),
                         React.createElement("button", { className: getButtonClass('unit-status'), onClick: () => setView('unit-status') }, React.createElement(FilterIcon, { className: "w-5 h-5" }), " Estado de Unidades"),
                         React.createElement("button", { className: getButtonClass('material-status'), onClick: () => setView('material-status') }, React.createElement(ClipboardCheckIcon, { className: "w-5 h-5" }), " Estado de Materiales"),
                         (currentUser.role === 'admin' || currentUser.username === 'Puesto Comando') && React.createElement("button", { className: getButtonClass('command-post'), onClick: () => setView('command-post') }, React.createElement(AnnotationIcon, { className: "w-5 h-5" }), " Puesto Comando"),
@@ -805,6 +813,7 @@ const App = () => {
                         React.createElement("button", { className: getButtonClass('schedule'), onClick: () => setView('schedule') }, React.createElement(ClipboardListIcon, { className: "w-5 h-5" }), " Planificador"),
                         currentUser.role === 'admin' && React.createElement("button", { className: getButtonClass('time-grouped'), onClick: () => setView('time-grouped') }, React.createElement(ClockIcon, { className: "w-5 h-5" }), " Vista por Hora"),
                         (currentUser.role === 'admin' || currentUser.username === 'Puesto Comando') && React.createElement("button", { className: getButtonClass('regimen'), onClick: () => setView('regimen') }, React.createElement(DocumentTextIcon, { className: "w-5 h-5" }), " Régimen de Intervención"),
+                        React.createElement("button", { className: getButtonClass('hidro-alert'), onClick: () => setView('hidro-alert') }, React.createElement(ShieldExclamationIcon, { className: "w-5 h-5" }), " Alerta Hidro"),
                         currentUser.role === 'admin' && React.createElement("button", { className: getButtonClass('nomenclador'), onClick: () => setView('nomenclador') }, React.createElement(BookOpenIcon, { className: "w-5 h-5" }), " Nomencladores"),
                         currentUser.role === 'admin' && React.createElement("button", { className: getButtonClass('changelog'), onClick: () => setView('changelog') }, React.createElement(ArchiveBoxIcon, { className: "w-5 h-5" }), " Registro de Cambios")
                     ),

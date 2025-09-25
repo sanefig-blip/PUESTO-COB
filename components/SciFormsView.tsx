@@ -35,6 +35,7 @@ const SciFormsView: React.FC<SciFormsViewProps> = ({ personnel, unitList }) => {
             </div>
             
             <div className="flex border-b border-zinc-700">
+                {/* FIX: Added missing children prop to TabButton components. */}
                 <TabButton tabId="sci201">SCI-201: Briefing de Incidente</TabButton>
                 <TabButton tabId="sci211">SCI-211: Registro de Recursos</TabButton>
                 <TabButton tabId="sci207">SCI-207: Registro de Víctimas</TabButton>

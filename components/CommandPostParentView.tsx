@@ -153,6 +153,7 @@ const CommandPostParentView: React.FC<CommandPostParentViewProps> = (props) => {
     return (
         <div>
             <div className="flex border-b border-zinc-700">
+                {/* FIX: Added missing children prop to TabButton components. */}
                 <TabButton tabId="summary">Resumen</TabButton>
                 <TabButton tabId="tactical">Comando Táctico</TabButton>
                 <TabButton tabId="croquis">Croquis de Situación</TabButton>
@@ -193,7 +194,6 @@ const CommandPostParentView: React.FC<CommandPostParentViewProps> = (props) => {
                         />
                     </div>
                 }
-                {/* FIX: Removed onSketchCapture and onUnlockSketch props as they do not exist on Croquis component */}
                 {activeTab === 'croquis' && <Croquis 
                     ref={croquisRef}
                     isActive={true} 

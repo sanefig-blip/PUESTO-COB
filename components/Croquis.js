@@ -31,9 +31,33 @@ const Croquis = forwardRef((props, ref) => {
     const [inputText, setInputText] = useState('');
     
     const tacticalUnitLayers = useRef(new Map());
+
+    const capture = async () => {
+        if (!mapRef.current || !mapContainerRef.current) return null;
+        const controls = mapContainerRef.current.querySelectorAll('.leaflet-control-container, .croquis-controls');
+        controls.forEach(c => (c).style.display = 'none');
+        
+        try {
+            const canvas = await html2canvas(mapContainerRef.current, {
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#18181b', // zinc-900
+            });
+            return canvas.toDataURL('image/png');
+        } catch (error) {
+            console.error("Error capturing map:", error);
+            return null;
+        } finally {
+            controls.forEach(c => (c).style.display = '');
+        }
+    };
     
+     useImperativeHandle(ref, () => ({
+        capture,
+    }));
+
     const handleDownloadSketch = async () => {
-        const dataUrl = await croquisRef.current?.capture();
+        const dataUrl = await capture();
         if (dataUrl) {
             const link = document.createElement('a');
             link.download = `croquis-${new Date().toISOString().slice(0, 10)}.png`;
@@ -42,29 +66,6 @@ const Croquis = forwardRef((props, ref) => {
         }
     };
     
-    const croquisRef = useRef(null);
-     useImperativeHandle(ref, () => ({
-        capture: async () => {
-            if (!mapRef.current || !mapContainerRef.current) return null;
-            const controls = mapContainerRef.current.querySelectorAll('.leaflet-control-container, .croquis-controls');
-            controls.forEach(c => (c).style.display = 'none');
-            
-            try {
-                const canvas = await html2canvas(mapContainerRef.current, {
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: '#18181b', // zinc-900
-                });
-                return canvas.toDataURL('image/png');
-            } catch (error) {
-                console.error("Error capturing map:", error);
-                return null;
-            } finally {
-                controls.forEach(c => (c).style.display = '');
-            }
-        }
-    }));
-
     const saveElementsToLocalStorage = useCallback(() => {
         if (!drawnItemsRef.current) return;
         const geojsonData = drawnItemsRef.current.toGeoJSON();

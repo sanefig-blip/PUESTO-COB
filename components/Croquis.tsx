@@ -44,30 +44,32 @@ const Croquis = forwardRef<({ capture: () => Promise<string | null> }), CroquisP
     
     const tacticalUnitLayers = useRef(new Map<string, any>());
 
-    useImperativeHandle(ref, () => ({
-        capture: async () => {
-            if (!mapRef.current || !mapContainerRef.current) return null;
-            const controls = mapContainerRef.current.querySelectorAll('.leaflet-control-container, .croquis-controls');
-            controls.forEach(c => (c as HTMLElement).style.display = 'none');
-            
-            try {
-                const canvas = await html2canvas(mapContainerRef.current, {
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: '#18181b',
-                });
-                return canvas.toDataURL('image/png');
-            } catch (error) {
-                console.error("Error capturing map:", error);
-                return null;
-            } finally {
-                controls.forEach(c => (c as HTMLElement).style.display = '');
-            }
+    const capture = async () => {
+        if (!mapRef.current || !mapContainerRef.current) return null;
+        const controls = mapContainerRef.current.querySelectorAll('.leaflet-control-container, .croquis-controls');
+        controls.forEach(c => (c as HTMLElement).style.display = 'none');
+        
+        try {
+            const canvas = await html2canvas(mapContainerRef.current, {
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#18181b',
+            });
+            return canvas.toDataURL('image/png');
+        } catch (error) {
+            console.error("Error capturing map:", error);
+            return null;
+        } finally {
+            controls.forEach(c => (c as HTMLElement).style.display = '');
         }
+    };
+    
+    useImperativeHandle(ref, () => ({
+        capture
     }));
     
     const handleDownloadSketch = async () => {
-        const dataUrl = await croquisRef.current?.capture();
+        const dataUrl = await capture();
         if (dataUrl) {
             const link = document.createElement('a');
             link.download = `croquis-${new Date().toISOString().slice(0, 10)}.png`;
@@ -75,29 +77,6 @@ const Croquis = forwardRef<({ capture: () => Promise<string | null> }), CroquisP
             link.click();
         }
     };
-    
-    const croquisRef = useRef<{ capture: () => Promise<string | null> }>(null);
-     useImperativeHandle(ref, () => ({
-        capture: async () => {
-            if (!mapRef.current || !mapContainerRef.current) return null;
-            const controls = mapContainerRef.current.querySelectorAll('.leaflet-control-container, .croquis-controls');
-            controls.forEach(c => (c as HTMLElement).style.display = 'none');
-            
-            try {
-                const canvas = await html2canvas(mapContainerRef.current, {
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: '#18181b', // zinc-900
-                });
-                return canvas.toDataURL('image/png');
-            } catch (error) {
-                console.error("Error capturing map:", error);
-                return null;
-            } finally {
-                controls.forEach(c => (c as HTMLElement).style.display = '');
-            }
-        }
-    }));
 
     const saveElementsToLocalStorage = useCallback(() => {
         if (!drawnItemsRef.current) return;

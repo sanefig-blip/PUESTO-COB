@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-dept-organizer-cache-v609';
+const CACHE_NAME = 'fire-dept-organizer-cache-v610';
 const urlsToCache = [
   './',
   './index.html',
@@ -10,8 +10,8 @@ const urlsToCache = [
   './components/ChangeLogView.js',
   'https://ci.bomberosdelaciudad.gob.ar/img/favicon.ico',
   'https://cdn.tailwindcss.com',
-  'https://esm.sh/react@^19.0.0',
-  'https://esm.sh/react-dom@^19.0.0/client',
+  'https://esm.sh/react@18.2.0',
+  'https://esm.sh/react-dom@18.2.0/client',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
