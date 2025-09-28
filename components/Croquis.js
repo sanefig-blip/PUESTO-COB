@@ -471,7 +471,7 @@ const Croquis = forwardRef((props, ref) => {
     );
 
     return (
-        React.createElement("div", { className: `w-full h-full relative ${isFullScreen ? 'fixed inset-0 z-50' : ''}` },
+        React.createElement("div", { className: `w-full h-[75vh] relative ${isFullScreen ? 'fixed inset-0 z-50' : ''}` },
             React.createElement("input", { type: "file", ref: kmlInputRef, onChange: handleKmlUpload, style: { display: 'none' }, accept: ".kml" }),
             React.createElement("div", { ref: mapContainerRef, className: "w-full h-full rounded-xl bg-zinc-900 map-dark-theme" }),
             React.createElement("div", { className: "croquis-controls absolute top-3 left-3 flex flex-col gap-3 z-[1000]" },

@@ -483,7 +483,7 @@ const Croquis = forwardRef<({ capture: () => Promise<string | null> }), CroquisP
     );
 
     return (
-        <div className={`w-full h-full relative ${isFullScreen ? 'fixed inset-0 z-50' : ''}`}>
+        <div className={`w-full h-[75vh] relative ${isFullScreen ? 'fixed inset-0 z-50' : ''}`}>
              <input type="file" ref={kmlInputRef} onChange={handleKmlUpload} style={{ display: 'none' }} accept=".kml" />
             <div ref={mapContainerRef} className="w-full h-full rounded-xl bg-zinc-900 map-dark-theme" />
             <div className="croquis-controls absolute top-3 left-3 flex flex-col gap-3 z-[1000]">
