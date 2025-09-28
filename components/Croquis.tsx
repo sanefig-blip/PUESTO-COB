@@ -261,7 +261,7 @@ const Croquis = forwardRef<({ capture: () => Promise<string | null> }), CroquisP
             });
             const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri' });
             const baseLayers = { 'Calles': streetLayer, 'Satélite': satelliteLayer };
-            (storageKey === 'forestalSketch' ? satelliteLayer : streetLayer).addTo(map);
+            satelliteLayer.addTo(map);
             L.control.layers(baseLayers).addTo(map);
             
             loadElementsFromLocalStorage();
