@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
-import { TrashIcon, EngineIcon, LadderIcon, AmbulanceIcon, CommandPostIcon, PersonIcon, CrosshairsIcon, MaximizeIcon, MinimizeIcon, PencilIcon, FireIcon, PencilSwooshIcon, AttackArrowIcon, TransferLineIcon, DownloadIcon } from './icons';
+import { TrashIcon, EngineIcon, LadderIcon, AmbulanceIcon, CommandPostIcon, PersonIcon, CrosshairsIcon, MaximizeIcon, MinimizeIcon, PencilIcon, FireIcon, PencilSwooshIcon, AttackArrowIcon, TransferLineIcon, DownloadIcon, UploadIcon } from './icons';
 import { InterventionGroup, TrackedUnit } from '../types';
 import ReactDOMServer from 'react-dom/server';
+import { kml } from '@tmcw/togeojson';
 
 declare const L: any;
 declare const html2canvas: any;
@@ -28,7 +29,9 @@ const Croquis = forwardRef<({ capture: () => Promise<string | null> }), CroquisP
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<any>(null);
     const drawnItemsRef = useRef<any>(null);
+    const kmlLayerRef = useRef<any>(null);
     const drawingLine = useRef<any>(null);
+    const kmlInputRef = useRef<HTMLInputElement>(null);
 
     const [tool, setTool] = useState<Tool>(null);
     
@@ -136,6 +139,7 @@ const Croquis = forwardRef<({ capture: () => Promise<string | null> }), CroquisP
     const clearCanvas = () => {
         if (window.confirm("¿Está seguro de que desea borrar todo el boceto?")) {
             drawnItemsRef.current?.clearLayers();
+            kmlLayerRef.current?.clearLayers();
             localStorage.removeItem(storageKey);
     
             if (onUpdateInterventionGroups && interventionGroups) {
@@ -247,6 +251,56 @@ const Croquis = forwardRef<({ capture: () => Promise<string | null> }), CroquisP
         }
     }, [saveElementsToLocalStorage]);
     
+     const handleKmlUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            if (!text) return;
+            
+            try {
+                const dom = new DOMParser().parseFromString(text, 'text/xml');
+                const geojson = kml(dom);
+
+                if (kmlLayerRef.current) {
+                    kmlLayerRef.current.clearLayers();
+                }
+
+                const kmlLayer = L.geoJSON(geojson, {
+                    style: function() {
+                        return { color: '#3b82f6', weight: 2, opacity: 0.8, fillOpacity: 0.2 };
+                    },
+                    onEachFeature: function(feature: any, layer: any) {
+                        let popupContent = '<b>Feature</b>';
+                        if (feature.properties && feature.properties.name) {
+                            popupContent = `<b>${feature.properties.name}</b>`;
+                        }
+                        if (feature.properties && feature.properties.description) {
+                            popupContent += `<br>${feature.properties.description}`;
+                        }
+                        layer.bindPopup(popupContent);
+                    }
+                });
+
+                kmlLayerRef.current.addLayer(kmlLayer);
+                if (mapRef.current && kmlLayer.getBounds().isValid()) {
+                    mapRef.current.fitBounds(kmlLayer.getBounds());
+                }
+
+            } catch (error) {
+                console.error("Error processing KML file:", error);
+                alert("No se pudo cargar el archivo KML. Verifique el formato del archivo.");
+            }
+        };
+        reader.readAsText(file);
+
+        if (kmlInputRef.current) {
+            kmlInputRef.current.value = '';
+        }
+    };
+
     useEffect(() => {
         if (!isActive || !mapContainerRef.current) return;
         let map: any;
@@ -255,15 +309,30 @@ const Croquis = forwardRef<({ capture: () => Promise<string | null> }), CroquisP
             map = L.map(mapContainerRef.current, { center: [-34.6037, -58.3816], zoom: 15 });
             mapRef.current = map;
             drawnItemsRef.current = new L.FeatureGroup().addTo(map);
+            kmlLayerRef.current = new L.FeatureGroup().addTo(map);
 
             const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             });
             const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri' });
+            
             const baseLayers = { 'Calles': streetLayer, 'Satélite': satelliteLayer };
-            satelliteLayer.addTo(map);
+            satelliteLayer.addTo(map); // Default layer
+            
             L.control.layers(baseLayers).addTo(map);
             
+            // Handle theme class based on layer
+            map.on('baselayerchange', function(e: any) {
+                const container = map.getContainer();
+                if (e.name === 'Calles') {
+                    container.classList.add('street-map-active');
+                } else {
+                    container.classList.remove('street-map-active');
+                }
+            });
+            // Set initial state
+            map.getContainer().classList.remove('street-map-active');
+
             loadElementsFromLocalStorage();
         } else {
             map = mapRef.current;
@@ -373,6 +442,7 @@ const Croquis = forwardRef<({ capture: () => Promise<string | null> }), CroquisP
 
     return (
         <div className={`w-full h-full relative ${isFullScreen ? 'fixed inset-0 z-50' : ''}`}>
+             <input type="file" ref={kmlInputRef} onChange={handleKmlUpload} style={{ display: 'none' }} accept=".kml" />
             <div ref={mapContainerRef} className="w-full h-full rounded-xl bg-zinc-900 map-dark-theme" />
             <div className="croquis-controls absolute top-3 left-3 flex flex-col gap-3 z-[1000]">
                 {onUpdateInterventionGroups && (
@@ -430,6 +500,9 @@ const Croquis = forwardRef<({ capture: () => Promise<string | null> }), CroquisP
                  <button onClick={clearCanvas} className="p-2 bg-red-600 hover:bg-red-500 rounded-md text-white" title="Limpiar Todo"><TrashIcon className="w-5 h-5" /></button>
                 <button onClick={() => setIsFullScreen(fs => !fs)} className="p-2 bg-zinc-600 hover:bg-zinc-500 rounded-md text-white" title={isFullScreen ? "Salir de pantalla completa" : "Pantalla completa"}>
                     {isFullScreen ? <MinimizeIcon className="w-5 h-5" /> : <MaximizeIcon className="w-5 h-5" />}
+                </button>
+                 <button onClick={() => kmlInputRef.current?.click()} className="p-2 bg-zinc-600 hover:bg-zinc-500 rounded-md text-white" title="Cargar KML">
+                    <UploadIcon className="w-5 h-5" />
                 </button>
                 <button onClick={handleDownloadSketch} className="p-2 bg-zinc-600 hover:bg-zinc-500 rounded-md text-white" title="Descargar Croquis">
                     <DownloadIcon className="w-5 h-5" />

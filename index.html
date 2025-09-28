@@ -78,13 +78,9 @@
       }
     </style>
     <style>
-      /* Dark theme for Leaflet maps */
-      .map-dark-theme .leaflet-tile-pane {
+      /* Dark theme for Leaflet maps, applied only when street map is active */
+      .map-dark-theme.street-map-active .leaflet-tile-pane {
         filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
-      }
-      /* Disable filter for satellite imagery */
-      .map-dark-theme .leaflet-tile-pane img[src*="arcgisonline"] {
-        filter: none;
       }
     </style>
   <script type="importmap">

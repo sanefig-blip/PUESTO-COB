@@ -187,7 +187,7 @@ const App: React.FC = () => {
             { key: 'jefeGuardia', label: 'JEFE DE GUARDIA' },
             { key: 'jefeReserva', label: 'JEFE DE RESERVA' }
         ];
-// FIX: Explicitly type the return value of the map callback to 'Officer' to ensure type compatibility.
+        // FIX: Explicitly type the return value of the map callback to 'Officer' to ensure type compatibility.
         const finalStaff = rolesMap.map((roleInfo): Officer => {
            const personName = dayRoster?.[roleInfo.key as keyof typeof dayRoster];
            if (personName) {
