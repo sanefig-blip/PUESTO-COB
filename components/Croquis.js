@@ -337,7 +337,9 @@ const Croquis = forwardRef((props, ref) => {
         let map;
 
         if (!mapRef.current) {
-            map = L.map(mapContainerRef.current, { center: [-34.6037, -58.3816], zoom: 15 });
+            const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri' });
+            
+            map = L.map(mapContainerRef.current, { center: [-34.6037, -58.3816], zoom: 15, layers: [satelliteLayer] });
             mapRef.current = map;
             drawnItemsRef.current = new L.FeatureGroup().addTo(map);
             kmlLayerRef.current = new L.FeatureGroup().addTo(map);
@@ -345,13 +347,11 @@ const Croquis = forwardRef((props, ref) => {
             const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             });
-            const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri' });
             
             const baseLayers = { 'Calles': streetLayer, 'Satélite': satelliteLayer };
-            satelliteLayer.addTo(map); // Default layer
             L.control.layers(baseLayers).addTo(map);
             
-             // Handle theme class based on layer
+            // Handle theme class based on layer
             map.on('baselayerchange', function(e) {
                 const container = map.getContainer();
                 if (e.name === 'Calles') {
