@@ -140,7 +140,7 @@ const CommandPostParentView = (props) => {
     return (
         React.createElement("div", null,
             React.createElement("div", { className: "flex border-b border-zinc-700" },
-                // FIX: Added missing children prop to TabButton components.
+// FIX: Added missing children prop to TabButton components.
                 React.createElement(TabButton, { tabId: "summary" }, "Resumen"),
                 React.createElement(TabButton, { tabId: "tactical" }, "Comando Táctico"),
                 React.createElement(TabButton, { tabId: "croquis" }, "Croquis de Situación"),

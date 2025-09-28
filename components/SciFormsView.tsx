@@ -35,7 +35,7 @@ const SciFormsView: React.FC<SciFormsViewProps> = ({ personnel, unitList }) => {
             </div>
             
             <div className="flex border-b border-zinc-700">
-                {/* FIX: Added missing children prop to TabButton components. */}
+                {/* FIX: Added missing children prop to TabButton components. The error indicates that the 'children' prop is required but was not provided. The fix involves passing the tab labels as children to the TabButton components. */}
                 <TabButton tabId="sci201">SCI-201: Briefing de Incidente</TabButton>
                 <TabButton tabId="sci211">SCI-211: Registro de Recursos</TabButton>
                 <TabButton tabId="sci207">SCI-207: Registro de Víctimas</TabButton>

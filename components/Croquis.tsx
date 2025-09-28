@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
-import { TrashIcon, EngineIcon, LadderIcon, AmbulanceIcon, CommandPostIcon, PersonIcon, CrosshairsIcon, MaximizeIcon, MinimizeIcon, PencilIcon, FireIcon, PencilSwooshIcon, AttackArrowIcon, TransferLineIcon, DownloadIcon, UploadIcon } from './icons';
+import { TrashIcon, EngineIcon, LadderIcon, AmbulanceIcon, CommandPostIcon, PersonIcon, CrosshairsIcon, MaximizeIcon, MinimizeIcon, PencilIcon, FireIcon, PencilSwooshIcon, AttackArrowIcon, TransferLineIcon, DownloadIcon, UploadIcon, SearchIcon } from './icons';
 import { InterventionGroup, TrackedUnit } from '../types';
 import ReactDOMServer from 'react-dom/server';
 import { kml } from '@tmcw/togeojson';
@@ -32,6 +32,7 @@ const Croquis = forwardRef<({ capture: () => Promise<string | null> }), CroquisP
     const kmlLayerRef = useRef<any>(null);
     const drawingLine = useRef<any>(null);
     const kmlInputRef = useRef<HTMLInputElement>(null);
+    const searchMarkerRef = useRef<any>(null);
 
     const [tool, setTool] = useState<Tool>(null);
     
@@ -45,6 +46,9 @@ const Croquis = forwardRef<({ capture: () => Promise<string | null> }), CroquisP
     const [textSize, setTextSize] = useState(16);
     const [inputText, setInputText] = useState('');
     
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+
     const tacticalUnitLayers = useRef(new Map<string, any>());
 
     const capture = async () => {
@@ -150,6 +154,45 @@ const Croquis = forwardRef<({ capture: () => Promise<string | null> }), CroquisP
                 onUpdateInterventionGroups(updatedGroups);
             }
         }
+    };
+    
+    const handleSearch = async () => {
+        if (!searchQuery.trim()) return;
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}, Buenos Aires, Argentina`;
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data && data.length > 0) {
+                setSearchResults(data);
+            } else {
+                alert('No se encontraron resultados.');
+                setSearchResults([]);
+            }
+        } catch (error) {
+            console.error("Error en la búsqueda de calles:", error);
+            alert("Ocurrió un error al buscar la dirección.");
+        }
+    };
+
+    const handleResultClick = (result: any) => {
+        const latLng: [number, number] = [result.lat, result.lon];
+        mapRef.current.setView(latLng, 17);
+        
+        if (searchMarkerRef.current) {
+            mapRef.current.removeLayer(searchMarkerRef.current);
+        }
+
+        searchMarkerRef.current = L.marker(latLng, {
+             icon: L.divIcon({
+                className: 'custom-search-marker',
+                html: `<div class="p-1.5 bg-blue-500 rounded-full border-2 border-white animate-pulse"></div>`,
+                iconSize: [12, 12],
+                iconAnchor: [6,6],
+            })
+        }).addTo(mapRef.current);
+        
+        setSearchResults([]);
+        setSearchQuery(result.display_name.split(',')[0]);
     };
 
     const handleMapClick = useCallback((e: any) => {
@@ -447,19 +490,63 @@ const Croquis = forwardRef<({ capture: () => Promise<string | null> }), CroquisP
             <div className="croquis-controls absolute top-3 left-3 flex flex-col gap-3 z-[1000]">
                 {onUpdateInterventionGroups && (
                     <div className="bg-zinc-800/80 backdrop-blur-sm p-2 rounded-lg max-w-xs">
-                        <h4 className="text-white font-bold text-sm mb-2">Unidades Tácticas</h4>
-                        <ul className="space-y-1 max-h-48 overflow-y-auto pr-1">
-                           {interventionGroups.flatMap(g => g.units).map(unit => {
-                                const isPlaced = unit.lat && unit.lng;
-                                return (
-                                <li key={unit.id} onClick={() => !isPlaced && setUnitToPlace(unit)} className={`text-xs px-2 py-1 rounded cursor-pointer ${isPlaced ? 'bg-green-800/50 text-green-300' : 'bg-sky-800/70 hover:bg-sky-700 text-sky-200'} ${unitToPlace?.id === unit.id ? 'ring-2 ring-yellow-300' : ''}`}>
-                                    {unit.id} ({isPlaced ? 'Ubicado' : 'Ubicar'})
-                                </li>
-                               )
-                           })}
-                        </ul>
+                        <h4 className="text-white font-bold text-sm mb-2">Grupos de Intervención</h4>
+                        <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                            {interventionGroups.map(group => (
+                                <div key={group.id}>
+                                    <h5 className={`font-semibold text-xs px-2 py-1 rounded-t ${group.type === 'Frente' ? 'bg-blue-900/80 text-blue-300' : 'bg-teal-900/80 text-teal-300'}`}>
+                                        {group.type}: {group.name}
+                                    </h5>
+                                    <ul className="bg-zinc-900/50 rounded-b p-1 space-y-1">
+                                        {group.units.length > 0 ? group.units.map(unit => {
+                                            const isPlaced = unit.lat && unit.lng;
+                                            const handleClick = () => {
+                                                if (isPlaced && unit.lat && unit.lng) {
+                                                    mapRef.current?.setView([unit.lat, unit.lng], 18);
+                                                } else {
+                                                    setUnitToPlace(unit);
+                                                }
+                                            };
+                                            return (
+                                                <li key={unit.id} onClick={handleClick} className={`text-xs px-2 py-1 rounded cursor-pointer ${isPlaced ? 'bg-green-800/50 text-green-300 hover:bg-green-700/50' : 'bg-sky-800/70 hover:bg-sky-700 text-sky-200'} ${unitToPlace?.id === unit.id ? 'ring-2 ring-yellow-300' : ''}`}>
+                                                    {unit.id} ({isPlaced ? 'Ubicado' : 'Ubicar'})
+                                                </li>
+                                            );
+                                        }) : <li className="text-xs text-zinc-500 px-2 py-1">Sin unidades</li>}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
+                 <div className="bg-zinc-800/80 backdrop-blur-sm p-2 rounded-lg">
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            placeholder="Buscar calle..."
+                            className="w-full bg-zinc-900 border-zinc-700 text-white rounded p-1 text-sm"
+                        />
+                        <button onClick={handleSearch} className="p-2 bg-blue-600 hover:bg-blue-500 rounded-md text-white">
+                            <SearchIcon className="w-4 h-4" />
+                        </button>
+                    </div>
+                    {searchResults.length > 0 && (
+                        <ul className="mt-2 bg-zinc-900/80 rounded-md max-h-40 overflow-y-auto text-sm text-white">
+                            {searchResults.map((result, index) => (
+                                <li 
+                                    key={index} 
+                                    onClick={() => handleResultClick(result)}
+                                    className="p-2 cursor-pointer hover:bg-zinc-700 border-b border-zinc-700/50 last:border-b-0"
+                                >
+                                    {result.display_name}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
                 <div className="bg-zinc-800/80 backdrop-blur-sm p-2 rounded-lg">
                     <div className="grid grid-cols-2 gap-2">
                         <ToolButton toolName="impact" label="Impacto" icon={<FireIcon className="w-6 h-6" />} />

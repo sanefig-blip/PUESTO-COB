@@ -153,7 +153,7 @@ const CommandPostParentView: React.FC<CommandPostParentViewProps> = (props) => {
     return (
         <div>
             <div className="flex border-b border-zinc-700">
-                {/* FIX: Added missing children prop to TabButton components. */}
+                {/* FIX: Added missing children prop to TabButton components. The error indicates that the 'children' prop is required but was not provided. The fix involves passing the tab labels as children to the TabButton components. */}
                 <TabButton tabId="summary">Resumen</TabButton>
                 <TabButton tabId="tactical">Comando Táctico</TabButton>
                 <TabButton tabId="croquis">Croquis de Situación</TabButton>
