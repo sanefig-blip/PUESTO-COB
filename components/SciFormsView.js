@@ -28,6 +28,7 @@ const SciFormsView = ({ personnel, unitList }) => {
             ),
             
             React.createElement("div", { className: "flex border-b border-zinc-700" },
+                // FIX: Added missing children prop to TabButton components. The error indicates that the 'children' prop is required but was not provided. The fix involves passing the tab labels as children to the TabButton components.
                 React.createElement(TabButton, { tabId: "sci201" }, "SCI-201: Briefing de Incidente"),
                 React.createElement(TabButton, { tabId: "sci211" }, "SCI-211: Registro de Recursos"),
                 React.createElement(TabButton, { tabId: "sci207" }, "SCI-207: Registro de Víctimas")

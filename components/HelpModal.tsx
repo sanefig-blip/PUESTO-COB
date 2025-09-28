@@ -47,6 +47,23 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, unitList, comman
               <li><strong className="text-zinc-800 dark:text-white">Nomencladores:</strong> Permite gestionar las listas predefinidas de "Personal" y "Unidades" que se utilizan en los menús desplegables.</li>
             </ul>
           </section>
+           <section>
+            <h3 className="text-xl font-semibold text-blue-600 dark:text-blue-300 mb-3">Sincronización en Tiempo Real</h3>
+            <p className="mb-4">
+              ¡El sistema ahora opera en tiempo real! Esto permite que múltiples puestos de comando, incluso en distintas ubicaciones, vean las actualizaciones de los demás instantáneamente.
+            </p>
+            <ul className="list-disc list-inside space-y-2">
+              <li><strong className="text-zinc-800 dark:text-white">Funcionamiento Automático:</strong> Cuando un usuario modifica un reporte (por ejemplo, el estado de una unidad), el cambio se guarda y se transmite automáticamente a todos los demás usuarios que tengan la aplicación abierta.</li>
+              <li><strong className="text-zinc-800 dark:text-white">Indicador de Estado:</strong> En la esquina inferior derecha de la pantalla, verás un indicador de estado de la sincronización:
+                <ul className="list-['-_'] list-inside mt-2 pl-4 space-y-1">
+                  <li><span className="px-2 py-0.5 text-xs rounded-full bg-green-600/80 text-white">Conectado:</span> La sincronización está activa y funcionando correctamente.</li>
+                  <li><span className="px-2 py-0.5 text-xs rounded-full bg-yellow-500/80 text-black">Conectando...:</span> El sistema está intentando establecer la conexión.</li>
+                  <li><span className="px-2 py-0.5 text-xs rounded-full bg-red-600/80 text-white">Desconectado:</span> No hay conexión. Tus cambios se guardan localmente pero no se enviarán hasta que se restablezca la conexión.</li>
+                </ul>
+              </li>
+              <li><strong className="text-zinc-800 dark:text-white">No se requiere configuración:</strong> Esta función está siempre activa y no necesita ninguna configuración manual.</li>
+            </ul>
+          </section>
           <section>
             <h3 className="text-xl font-semibold text-blue-600 dark:text-blue-300 mb-3">Reporte de Unidades (Importar/Exportar)</h3>
             <p className="mb-2">

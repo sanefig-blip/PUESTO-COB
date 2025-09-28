@@ -39,6 +39,23 @@ const HelpModal = ({ isOpen, onClose, unitList, commandPersonnel, servicePersonn
             )
           ),
           React.createElement("section", null,
+            React.createElement("h3", { className: "text-xl font-semibold text-blue-600 dark:text-blue-300 mb-3" }, "Sincronización en Tiempo Real"),
+            React.createElement("p", { className: "mb-4" },
+              "¡El sistema ahora opera en tiempo real! Esto permite que múltiples puestos de comando, incluso en distintas ubicaciones, vean las actualizaciones de los demás instantáneamente."
+            ),
+            React.createElement("ul", { className: "list-disc list-inside space-y-2" },
+              React.createElement("li", null, React.createElement("strong", { className: "text-zinc-800 dark:text-white" }, "Funcionamiento Automático:"), " Cuando un usuario modifica un reporte (por ejemplo, el estado de una unidad), el cambio se guarda y se transmite automáticamente a todos los demás usuarios que tengan la aplicación abierta."),
+              React.createElement("li", null, React.createElement("strong", { className: "text-zinc-800 dark:text-white" }, "Indicador de Estado:"), " En la esquina inferior derecha de la pantalla, verás un indicador de estado de la sincronización:",
+                React.createElement("ul", { className: "list-['-_'] list-inside mt-2 pl-4 space-y-1" },
+                  React.createElement("li", null, React.createElement("span", { className: "px-2 py-0.5 text-xs rounded-full bg-green-600/80 text-white" }, "Conectado:"), " La sincronización está activa y funcionando correctamente."),
+                  React.createElement("li", null, React.createElement("span", { className: "px-2 py-0.5 text-xs rounded-full bg-yellow-500/80 text-black" }, "Conectando...:"), " El sistema está intentando establecer la conexión."),
+                  React.createElement("li", null, React.createElement("span", { className: "px-2 py-0.5 text-xs rounded-full bg-red-600/80 text-white" }, "Desconectado:"), " No hay conexión. Tus cambios se guardan localmente pero no se enviarán hasta que se restablezca la conexión.")
+                )
+              ),
+              React.createElement("li", null, React.createElement("strong", { className: "text-zinc-800 dark:text-white" }, "No se requiere configuración:"), " Esta función está siempre activa y no necesita ninguna configuración manual.")
+            )
+          ),
+          React.createElement("section", null,
             React.createElement("h3", { className: "text-xl font-semibold text-blue-600 dark:text-blue-300 mb-3" }, "Reporte de Unidades (Importar/Exportar)"),
             React.createElement("p", { className: "mb-2" },
                 "Puedes importar un reporte de unidades completo desde un archivo Excel (", React.createElement("code", { className: "bg-gray-100 dark:bg-zinc-900 px-1 rounded" }, ".xlsx"), ") o un PDF (", React.createElement("code", { className: "bg-gray-100 dark:bg-zinc-900 px-1 rounded" }, ".pdf"), ") que haya sido generado previamente por esta aplicación."
